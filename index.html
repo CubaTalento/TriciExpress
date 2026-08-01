@@ -89,6 +89,11 @@
 <meta name="theme-color" content="#081A3A">
 <link rel="apple-touch-icon" href="icon-192.png"> 
 </head>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>  
 <body>
 <div id="phone">
 <div class="wrap">
