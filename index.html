@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TriciExpress</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0A0F1F">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -110,6 +113,8 @@ if ("serviceWorker" in navigator) {
     <button id="tab-chofer">Chofer</button>
     <button id="tab-panel">Panel</button>
     <button id="tab-admin">Admin</button>
+    <button id="btnInstalar" class="btn btn-coral" style="display:none; margin-top:12px;">
+  📲 Instalar TriciExpress</button>
   </div>
 
   <!-- ============ VISTA PASAJERO ============ -->
@@ -950,6 +955,26 @@ if ("serviceWorker" in navigator) {
   refreshPasajero();
   loadPerfilChofer().then(p=>{ if(p){ choferPerfil = p; } });
 })();
+// ===== INSTALACIÓN =====
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const btn = document.getElementById("btnInstalar");
+  if (btn) btn.style.display = "block";
+});
+
+document.getElementById("btnInstalar").addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+
+  deferredPrompt = null;
+  document.getElementById("btnInstalar").style.display = "none";
+});
 </script>
 </body>
 </html>
