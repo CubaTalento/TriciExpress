@@ -955,26 +955,43 @@ if ("serviceWorker" in navigator) {
   refreshPasajero();
   loadPerfilChofer().then(p=>{ if(p){ choferPerfil = p; } });
 })();
-// ===== INSTALACIÓN =====
-let deferredPrompt;
+// ===== INSTALACIÓN TRICIEXPRESS =====
+let deferredPrompt = null;
 
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   deferredPrompt = e;
-
-  const btn = document.getElementById("btnInstalar");
-  if (btn) btn.style.display = "block";
 });
 
-document.getElementById("btnInstalar").addEventListener("click", async () => {
-  if (!deferredPrompt) return;
+const btnInstalar = document.getElementById("btnInstalar");
 
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
+if (btnInstalar) {
+  btnInstalar.addEventListener("click", async () => {
 
-  deferredPrompt = null;
-  document.getElementById("btnInstalar").style.display = "none";
-});
+    // Instalación automática cuando el navegador la permite
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+
+      const resultado = await deferredPrompt.userChoice;
+
+      if (resultado.outcome === "accepted") {
+        console.log("TriciExpress instalada correctamente");
+      }
+
+      deferredPrompt = null;
+      return;
+    }
+
+    // Si el navegador no ofrece instalación automática
+    alert(
+      "Para instalar TriciExpress:\n\n" +
+      "ANDROID: abre el menú ⋮ de Chrome y selecciona " +
+      "'Instalar aplicación' o 'Añadir a pantalla de inicio'.\n\n" +
+      "IPHONE: pulsa Compartir y selecciona " +
+      "'Añadir a pantalla de inicio'."
+    );
+  });
+}
 </script>
 </body>
 </html>
