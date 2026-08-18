@@ -7,6 +7,9 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0A0F1F">
 <link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TriciExpress">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -88,15 +91,7 @@
   .warn{color:var(--coral);}
   .link-sm{background:none; border:none; color:rgba(242,244,250,.45); font-size:11px; text-decoration:underline; cursor:pointer; padding:0; margin-top:6px;}
 </style>
- <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#081A3A">
-<link rel="apple-touch-icon" href="icon-192.png"> 
 </head>
-<script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
-</script>  
 <body>
 <div id="phone">
 <div class="wrap">
@@ -111,10 +106,7 @@ if ("serviceWorker" in navigator) {
   <div class="toggle">
     <button id="tab-pasajero" class="active">Pasajero</button>
     <button id="tab-chofer">Chofer</button>
-    <button id="tab-panel">Panel</button>
     <button id="tab-admin">Admin</button>
-    <button id="btnInstalar" class="btn btn-coral" style="display:none; margin-top:12px;">
-  📲 Instalar TriciExpress</button>
   </div>
 
   <!-- ============ VISTA PASAJERO ============ -->
@@ -130,6 +122,13 @@ if ("serviceWorker" in navigator) {
         <rect x="52" y="24" width="20" height="16" rx="3" fill="#38C6FF"/>
       </svg>
     </div>
+
+    <div class="section-label">
+      <span class="txt">Choferes disponibles ahora</span>
+      <button class="refresh-btn" id="refresh-choferes-disp"><span class="spin">↻</span> actualizar</button>
+    </div>
+    <div id="lista-choferes-disponibles"></div>
+    <div id="chip-chofer-preferido" style="display:none; margin-bottom:14px;"></div>
 
     <div class="card">
       <div class="field"><label>Punto de recogida</label><input id="p-pickup" type="text" placeholder="Ej: Parque Céspedes"></div>
@@ -213,7 +212,16 @@ if ("serviceWorker" in navigator) {
       </div>
       <p class="link-sm" id="btn-cambiar-perfil">Cambiar perfil de chofer (<span id="chofer-actual"></span>)</p>
 
-      <button class="btn btn-coral" id="btn-sos" style="margin:12px 0; background:#E0233C;">🚨 Emergencia — pedir ayuda ya</button>
+      <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div>
+          <p class="eyebrow" style="margin-bottom:2px;">Tu estado</p>
+          <div id="estado-actual" style="color:#fff; font-weight:600; font-size:14.5px;">Fuera de servicio</div>
+        </div>
+        <button class="btn btn-primary" id="btn-toggle-disponible" style="width:auto; padding:12px 18px;">Ponerme disponible</button>
+      </div>
+
+      <button class="btn btn-ghost" id="btn-activar-push" style="margin:10px 0;">🔔 Activar notificaciones de pedidos</button>
+      <button class="btn btn-coral" id="btn-sos" style="margin:0 0 12px; background:#E0233C;">🚨 Emergencia — pedir ayuda ya</button>
 
       <div id="mi-cuota"></div>
 
@@ -227,32 +235,27 @@ if ("serviceWorker" in navigator) {
     </div>
   </div>
 
-  <!-- ============ PANEL (cuotas) ============ -->
-  <div id="view-panel" style="display:none;">
-    <div id="alertas-banner"></div>
-    <div class="hero">
-      <p class="eyebrow">Cuota mensual</p>
-      <h2>Resumen de choferes por pedidos completados</h2>
-    </div>
-    <p class="precio-note" style="margin-bottom:14px;">Vista de referencia para calcular cuotas. Cualquiera que abra la app puede verla por ahora — más adelante conviene protegerla.</p>
-    <div class="section-label"><span class="txt">Choferes este mes</span>
-      <button class="refresh-btn" id="refresh-panel"><span class="spin">↻</span> actualizar</button>
-    </div>
-    <div id="lista-panel"></div>
-  </div>
-
   <!-- ============ ADMIN ============ -->
   <div id="view-admin" style="display:none;">
     <div class="hero">
       <p class="eyebrow">Solo para administrador</p>
-      <h2>Ajustes internos de la app</h2>
+      <h2>Ajustes internos y control de la app</h2>
     </div>
     <div class="card" id="admin-lock">
       <div class="field"><label>Contraseña de administrador</label><input id="admin-pass" type="password" placeholder="••••••"></div>
       <button class="btn btn-primary" id="btn-admin-entrar">Entrar</button>
     </div>
     <div id="admin-panel" style="display:none;">
-      <div class="card">
+      <button class="btn btn-ghost" id="btn-activar-push-admin" style="margin-bottom:14px;">🔔 Activar notificaciones de alertas</button>
+
+      <div id="alertas-banner"></div>
+
+      <div class="section-label"><span class="txt">Choferes este mes</span>
+        <button class="refresh-btn" id="refresh-panel"><span class="spin">↻</span> actualizar</button>
+      </div>
+      <div id="lista-panel"></div>
+
+      <div class="card" style="margin-top:6px;">
         <p class="eyebrow">Precios base (CUP)</p>
         <div class="field"><label>Corta (≤2km)</label><input id="a-corta" type="number"></div>
         <div class="field"><label>Media (3-6km)</label><input id="a-media" type="number"></div>
@@ -304,29 +307,14 @@ if ("serviceWorker" in navigator) {
 </div>
 
 <div class="toast" id="toast">Listo</div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   const SUPABASE_URL = 'https://oohjheishuvusvvfjjbb.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vaGpoZWlzaHV2dXN2dmZqamJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1Njc1MjMsImV4cCI6MjEwMTE0MzUyM30.iqlFIAxQPTitt_lDY5zu7roY33y12i6GQcMGxlQG3wQ';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const VAPID_PUBLIC_KEY = 'BKFPQqGmAehRifWbjYody7FxcaTRaJmmjo6ugydAGgNmpXfSYjv1QqFsjsExJi5Yg_z5EZGnoRPBQWjp9UnLxOo';
 
-  async function sbGet(table, id){
-    try{
-      const { data, error } = await supabase.from(table).select('data').eq('id', id).maybeSingle();
-      if(error){ console.error(error); return null; }
-      return data ? data.data : null;
-    }catch(e){ console.error(e); return null; }
-  }
-  async function sbSet(table, id, value){
-    try{
-      const { error } = await supabase.from(table).upsert({ id, data: value });
-      if(error){ console.error(error); return false; }
-      return true;
-    }catch(e){ console.error(e); return false; }
-  }
-  const BOARD_KEY = 'pedidos-board';
   const DEFAULT_CONFIG = {
     cuotaBase: 500,
     tiers: [ {min:40, descuento:0.4}, {min:20, descuento:0.2}, {min:0, descuento:0} ],
@@ -339,38 +327,92 @@ if ("serviceWorker" in navigator) {
   let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   const ADMIN_PASSCODE = 'trici2026'; // cámbiala editando este archivo
 
-  async function loadConfig(){
-    const saved = await sbGet('app_config', 'config');
-    if(saved){
-      CONFIG = Object.assign({}, DEFAULT_CONFIG, saved);
-      CONFIG.precios = Object.assign({}, DEFAULT_CONFIG.precios, saved.precios||{});
-      CONFIG.tiers = saved.tiers || DEFAULT_CONFIG.tiers;
-    }
-  }
-  async function saveConfig(){
-    const ok = await sbSet('app_config', 'config', CONFIG);
-    if(!ok) toast('No se pudo guardar la configuración.');
-    return ok;
-  }
   let sessionId = 'u' + Math.random().toString(36).slice(2,10);
   let pedidoAAceptar = null;
   let pedidoAReportar = null;
   let choferPerfil = null;
+  let choferDisponible = false;
+  let choferPreferidoCode = null;
 
   function toast(msg){
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'), 1800);
   }
+
+  // ==================== app_config (fila única) ====================
+  async function loadConfig(){
+    try{
+      const { data, error } = await supabase.from('app_config').select('data').eq('id','config').maybeSingle();
+      if(error || !data) return;
+      const saved = data.data || {};
+      CONFIG = Object.assign({}, DEFAULT_CONFIG, saved);
+      CONFIG.precios = Object.assign({}, DEFAULT_CONFIG.precios, saved.precios||{});
+      CONFIG.tiers = saved.tiers || DEFAULT_CONFIG.tiers;
+    }catch(e){ console.error(e); }
+  }
+  async function saveConfig(){
+    try{
+      const { error } = await supabase.from('app_config').upsert({ id:'config', data: CONFIG });
+      if(error){ toast('No se pudo guardar la configuración.'); return false; }
+      return true;
+    }catch(e){ toast('No se pudo guardar la configuración.'); return false; }
+  }
+
+  // ==================== pedidos (una fila por pedido) ====================
   async function loadBoard(){
-    const v = await sbGet('pedidos', 'board');
-    return v || [];
+    try{
+      const { data, error } = await supabase.from('pedidos').select('id,data').order('created_at', {ascending:false}).limit(200);
+      if(error){ console.error(error); return []; }
+      return data.map(r => Object.assign({}, r.data, { id: r.id }));
+    }catch(e){ console.error(e); return []; }
   }
-  async function saveBoard(list){
-    const ok = await sbSet('pedidos', 'board', list);
-    if(!ok) toast('No se pudo guardar. Revisa tu conexión.');
-    return ok;
+  async function insertPedido(pedido){
+    try{
+      const { error } = await supabase.from('pedidos').insert({
+        id: pedido.id, data: pedido, status: pedido.status, driver_code: pedido.driverCode || null
+      });
+      if(error){ toast('No se pudo publicar. Revisa tu conexión.'); return false; }
+      return true;
+    }catch(e){ toast('No se pudo publicar. Revisa tu conexión.'); return false; }
   }
+  async function updatePedido(id, patch){
+    try{
+      const { data, error } = await supabase.from('pedidos').select('data').eq('id', id).maybeSingle();
+      if(error || !data) return false;
+      const merged = Object.assign({}, data.data, patch);
+      const { error: err2 } = await supabase.from('pedidos').update({
+        data: merged, status: merged.status, driver_code: merged.driverCode || null
+      }).eq('id', id);
+      if(err2){ toast('No se pudo actualizar. Revisa tu conexión.'); return false; }
+      return true;
+    }catch(e){ toast('No se pudo actualizar. Revisa tu conexión.'); return false; }
+  }
+
+  // ==================== choferes (perfil + disponibilidad, compartido) ====================
+  async function loadChoferesDisponibles(){
+    try{
+      const { data, error } = await supabase.from('choferes').select('code,data').eq('disponible', true);
+      if(error) return [];
+      return data.map(r => Object.assign({}, r.data, { code: r.code }));
+    }catch(e){ return []; }
+  }
+  async function upsertChofer(perfil, disponible){
+    try{
+      const { error } = await supabase.from('choferes').upsert({
+        code: perfil.code, data: perfil, disponible, updated_at: new Date().toISOString()
+      });
+      return !error;
+    }catch(e){ return false; }
+  }
+  async function loadEstadoChofer(code){
+    try{
+      const { data, error } = await supabase.from('choferes').select('disponible').eq('code', code).maybeSingle();
+      if(error || !data) return false;
+      return !!data.disponible;
+    }catch(e){ return false; }
+  }
+
   async function loadPerfilChofer(){
     try{ const raw = localStorage.getItem('chofer-perfil'); return raw ? JSON.parse(raw) : null; }
     catch(e){ return null; }
@@ -379,6 +421,7 @@ if ("serviceWorker" in navigator) {
     try{ localStorage.setItem('chofer-perfil', JSON.stringify(p)); return true; }
     catch(e){ toast('No se pudo guardar el perfil.'); return false; }
   }
+
   function waLink(phone, text){
     const clean = (phone||'').replace(/[^0-9]/g,'');
     return `https://wa.me/${clean}?text=${encodeURIComponent(text)}`;
@@ -413,100 +456,103 @@ if ("serviceWorker" in navigator) {
     return base;
   }
 
-  // ---------------- Alertas de seguridad ----------------
-  async function loadAlertas(){
-    const v = await sbGet('alertas', 'board');
-    return v || [];
+  // ==================== Notificaciones push ====================
+  function urlBase64ToUint8Array(base64String){
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+    return arr;
   }
-  async function saveAlertas(list){
-    const ok = await sbSet('alertas', 'board', list);
-    if(!ok) toast('No se pudo enviar la alerta. Revisa tu conexión.');
-    return ok;
-  }
-  async function dispararAlerta(tipo, pedido){
-    const ok = confirm('¿Confirmas que hay una emergencia? Esto va a avisar de inmediato.');
-    if(!ok) return;
-    const alertas = await loadAlertas();
-    const alerta = {
-      id: 'a'+Date.now()+Math.random().toString(36).slice(2,6),
-      tipo,
-      ts: Date.now(),
-      resuelta: false,
-    };
-    let mensaje = '🚨 EMERGENCIA TriciExpress. ';
-    if(tipo==='chofer' && choferPerfil){
-      alerta.nombre = choferPerfil.nick || choferPerfil.name;
-      alerta.code = choferPerfil.code;
-      alerta.chapa = choferPerfil.chapa;
-      alerta.telefono = choferPerfil.phone;
-      mensaje += `Chofer ${alerta.nombre} (${alerta.code}), chapa ${alerta.chapa||'—'}. `;
+  async function subscribeToPush(role, code){
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+      toast('Tu navegador no soporta notificaciones push');
+      return false;
     }
-    if(pedido){
-      alerta.pedidoId = pedido.id;
-      alerta.pickup = pedido.pickup;
-      alerta.drop = pedido.drop;
-      mensaje += `Viaje: ${pedido.pickup} → ${pedido.drop}. `;
-      if(tipo==='pasajero'){
-        alerta.nombre = pedido.pasajero;
-        alerta.telefono = pedido.pasajeroPhone;
-        mensaje += `Pasajero ${pedido.pasajero} reporta peligro con chofer ${pedido.driver} (${pedido.driverCode}), chapa ${pedido.driverChapa||'—'}. `;
+    try{
+      const perm = await Notification.requestPermission();
+      if(perm !== 'granted'){ toast('No diste permiso para notificaciones'); return false; }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if(!sub){
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
       }
-    }
-    mensaje += `Hora: ${formatFecha(Date.now())}.`;
-    alertas.unshift(alerta);
-    await saveAlertas(alertas);
-    toast('Alerta enviada');
-    if(CONFIG.emergencyPhone){
-      window.open(waLink(CONFIG.emergencyPhone, mensaje), '_blank');
-    } else {
-      toast('No hay número de emergencia configurado — avisa al admin directamente');
-    }
-  }
-  async function resolverAlerta(id){
-    const alertas = await loadAlertas();
-    const idx = alertas.findIndex(a=>a.id===id);
-    if(idx===-1) return;
-    alertas[idx].resuelta = true;
-    await saveAlertas(alertas);
-    toast('Alerta marcada como resuelta');
-    refreshPanel();
-  }
-  async function renderAlertasBanner(){
-    const alertas = (await loadAlertas()).filter(a=>!a.resuelta);
-    const box = document.getElementById('alertas-banner');
-    if(!box) return;
-    if(alertas.length===0){ box.innerHTML=''; return; }
-    box.innerHTML = alertas.map(a=>`
-      <div class="card" style="border-color:#E0233C; background:rgba(224,35,60,.12); margin-bottom:10px;">
-        <p class="eyebrow" style="color:#E0233C;">🚨 Alerta activa · ${a.tipo==='chofer'?'chofer':'pasajero'}</p>
-        <div class="meta" style="color:#fff;">${a.nombre||'—'} ${a.code?`(${a.code})`:''}</div>
-        ${a.pickup ? `<div class="meta">Viaje: ${a.pickup} → ${a.drop}</div>` : ''}
-        <div class="meta">${formatFecha(a.ts)}</div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-id="${a.id}">Marcar resuelta</button>
-      </div>`).join('');
-    box.querySelectorAll('button[data-id]').forEach(b=>{
-      b.addEventListener('click', ()=>resolverAlerta(b.dataset.id));
-    });
+      const id = role === 'admin' ? 'admin' : `chofer-${code}`;
+      const { error } = await supabase.from('push_subscriptions').upsert({
+        id, role, code: role==='chofer' ? code : null, subscription: sub.toJSON()
+      });
+      if(error){ toast('No se pudo activar la notificación'); return false; }
+      toast('Notificaciones activadas');
+      return true;
+    }catch(e){ console.error(e); toast('No se pudo activar la notificación'); return false; }
   }
 
-  // ---------------- Tabs ----------------
-  const tabs = { pasajero: document.getElementById('tab-pasajero'), chofer: document.getElementById('tab-chofer'), panel: document.getElementById('tab-panel'), admin: document.getElementById('tab-admin') };
-  const views = { pasajero: document.getElementById('view-pasajero'), chofer: document.getElementById('view-chofer'), panel: document.getElementById('view-panel'), admin: document.getElementById('view-admin') };
+  // ==================== Tabs ====================
+  const tabs = { pasajero: document.getElementById('tab-pasajero'), chofer: document.getElementById('tab-chofer'), admin: document.getElementById('tab-admin') };
+  const views = { pasajero: document.getElementById('view-pasajero'), chofer: document.getElementById('view-chofer'), admin: document.getElementById('view-admin') };
   function activarTab(nombre){
     Object.keys(tabs).forEach(k=>{
       tabs[k].classList.toggle('active', k===nombre);
       views[k].style.display = k===nombre ? '' : 'none';
     });
-    if(nombre==='pasajero') refreshPasajero();
+    if(nombre==='pasajero'){ refreshPasajero(); refreshChoferesDisponibles(); }
     if(nombre==='chofer') refreshChofer();
-    if(nombre==='panel') refreshPanel();
   }
   tabs.pasajero.addEventListener('click', ()=>activarTab('pasajero'));
   tabs.chofer.addEventListener('click', ()=>activarTab('chofer'));
-  tabs.panel.addEventListener('click', ()=>activarTab('panel'));
   tabs.admin.addEventListener('click', ()=>activarTab('admin'));
 
-  // ---------------- Selector de categoría / rango / precio ----------------
+  // ==================== Choferes disponibles (vista pasajero) ====================
+  async function refreshChoferesDisponibles(){
+    const btn = document.getElementById('refresh-choferes-disp');
+    if(btn) btn.classList.add('loading');
+    const choferes = await loadChoferesDisponibles();
+    if(btn) btn.classList.remove('loading');
+    const box = document.getElementById('lista-choferes-disponibles');
+    if(choferes.length===0){
+      box.innerHTML = '<div class="empty">Ningún chofer está disponible ahora mismo — tu pedido igual queda visible para todos.</div>';
+      return;
+    }
+    box.innerHTML = '';
+    choferes.forEach(c=>{
+      const div = document.createElement('div');
+      div.className = 'pedido';
+      const elegido = choferPreferidoCode === c.code;
+      div.innerHTML = `
+        <div class="top">
+          <div class="route">${c.nick || c.name}</div>
+          <span class="badge aceptado">disponible</span>
+        </div>
+        <div class="meta">${c.modelo || 'Trici'} · Chapa ${c.chapa || '—'}</div>
+        <div class="rowbtns">
+          <button class="btn ${elegido?'btn-primary':'btn-ghost'} btn-sm" data-code="${c.code}">${elegido ? '✓ Seleccionado' : 'Seleccionar'}</button>
+        </div>`;
+      div.querySelector('button').addEventListener('click', ()=>{
+        choferPreferidoCode = elegido ? null : c.code;
+        renderChipPreferido(c);
+        refreshChoferesDisponibles();
+      });
+      box.appendChild(div);
+    });
+  }
+  function renderChipPreferido(c){
+    const box = document.getElementById('chip-chofer-preferido');
+    if(!choferPreferidoCode){ box.style.display='none'; box.innerHTML=''; return; }
+    box.style.display='';
+    box.innerHTML = `<div class="precio-box"><span class="lbl">Prefieres a ${c.nick||c.name}</span><button class="link-sm" id="quitar-preferido" style="margin:0;">Quitar</button></div>`;
+    document.getElementById('quitar-preferido').addEventListener('click', ()=>{
+      choferPreferidoCode = null;
+      box.style.display='none'; box.innerHTML='';
+      refreshChoferesDisponibles();
+    });
+  }
+  document.getElementById('refresh-choferes-disp').addEventListener('click', refreshChoferesDisponibles);
+
+  // ==================== Selector de categoría / rango / cuándo / precio ====================
   let categoriaSel = null, rangoSel = null;
   let cuandoSel = 'ahora';
   const chipsCategoria = document.querySelectorAll('#chips-categoria .chip');
@@ -517,9 +563,24 @@ if ("serviceWorker" in navigator) {
   const pFecha = document.getElementById('p-fecha');
   const pHora = document.getElementById('p-hora');
   const precioPreview = document.getElementById('precio-preview');
-
   pFecha.min = new Date().toISOString().slice(0,10);
 
+  chipsCategoria.forEach(c=>{
+    c.addEventListener('click', ()=>{
+      categoriaSel = c.dataset.v;
+      chipsCategoria.forEach(x=>x.classList.toggle('selected', x===c));
+      fieldRango.style.display = categoriaSel==='larga' ? '' : 'none';
+      if(categoriaSel!=='larga'){ rangoSel=null; chipsRango.forEach(x=>x.classList.remove('selected')); }
+      actualizarPrecioPreview();
+    });
+  });
+  chipsRango.forEach(c=>{
+    c.addEventListener('click', ()=>{
+      rangoSel = c.dataset.v;
+      chipsRango.forEach(x=>x.classList.toggle('selected', x===c));
+      actualizarPrecioPreview();
+    });
+  });
   chipsCuando.forEach(c=>{
     c.addEventListener('click', ()=>{
       cuandoSel = c.dataset.v;
@@ -541,30 +602,13 @@ if ("serviceWorker" in navigator) {
     const ts = obtenerTimestampProgramado();
     const p = ts ? calcularPrecio(categoriaSel, rangoSel, ts) : null;
     precioPreview.textContent = p ? `$${p} CUP` : '—';
-    precioPreview.nextElementSibling ? null : null;
     document.getElementById('precio-nota').textContent = cuandoSel==='programado'
       ? 'El recargo nocturno (si aplica) se calcula según la hora programada, no la hora actual.'
       : 'Elige la distancia para ver el precio. Este es el tope sugerido — tú y el chofer pueden ajustarlo al coordinar.';
     checkReady();
   }
-  chipsCategoria.forEach(c=>{
-    c.addEventListener('click', ()=>{
-      categoriaSel = c.dataset.v;
-      chipsCategoria.forEach(x=>x.classList.toggle('selected', x===c));
-      fieldRango.style.display = categoriaSel==='larga' ? '' : 'none';
-      if(categoriaSel!=='larga'){ rangoSel=null; chipsRango.forEach(x=>x.classList.remove('selected')); }
-      actualizarPrecioPreview();
-    });
-  });
-  chipsRango.forEach(c=>{
-    c.addEventListener('click', ()=>{
-      rangoSel = c.dataset.v;
-      chipsRango.forEach(x=>x.classList.toggle('selected', x===c));
-      actualizarPrecioPreview();
-    });
-  });
 
-  // ---------------- Publicar pedido (pasajero) ----------------
+  // ==================== Publicar pedido (pasajero) ====================
   const pPickup = document.getElementById('p-pickup');
   const pDrop = document.getElementById('p-drop');
   const pName = document.getElementById('p-name');
@@ -588,8 +632,7 @@ if ("serviceWorker" in navigator) {
     const precioBase = ts ? calcularPrecio(categoriaSel, rangoSel, ts) : null;
     if(!precioBase || !ts) return;
     btnPublicar.disabled = true;
-    const list = await loadBoard();
-    list.unshift({
+    const pedido = {
       id: 'p'+Date.now()+Math.random().toString(36).slice(2,6),
       ownerSession: sessionId,
       pasajero: pName.value.trim(),
@@ -600,15 +643,18 @@ if ("serviceWorker" in navigator) {
       categoria: categoriaSel, rango: rangoSel, nocturno: esNocturno(ts),
       precioBase: precioBase,
       programado: cuandoSel==='programado', programadoPara: cuandoSel==='programado' ? ts : null,
-      status: 'pendiente', driver:null, driverPhone:null, driverCode:null, driverSession:null,
+      dirigidoA: choferPreferidoCode || null,
+      status: 'pendiente', driver:null, driverPhone:null, driverCode:null, driverNick:null, driverModelo:null, driverChapa:null, driverSession:null,
       reportado:false,
       createdAt: Date.now(), completedAt:null,
-    });
-    const ok = await saveBoard(list);
+    };
+    const ok = await insertPedido(pedido);
     if(ok){
       toast('Pedido publicado');
       pPickup.value=''; pDrop.value=''; pNota.value=''; pFecha.value=''; pHora.value='';
       categoriaSel=null; rangoSel=null; cuandoSel='ahora';
+      choferPreferidoCode=null;
+      document.getElementById('chip-chofer-preferido').style.display='none';
       chipsCategoria.forEach(x=>x.classList.remove('selected'));
       chipsRango.forEach(x=>x.classList.remove('selected'));
       chipsCuando.forEach(x=>x.classList.toggle('selected', x.dataset.v==='ahora'));
@@ -616,6 +662,7 @@ if ("serviceWorker" in navigator) {
       fieldProgramar.style.display='none';
       precioPreview.textContent='—';
       refreshPasajero();
+      refreshChoferesDisponibles();
     }
     checkReady();
   });
@@ -629,7 +676,7 @@ if ("serviceWorker" in navigator) {
     return p.programado ? `Programado: ${formatFecha(p.programadoPara)}` : 'Para ahora mismo';
   }
 
-  // ---------------- Lista "mis pedidos" ----------------
+  // ==================== Lista "mis pedidos" (pasajero) ====================
   async function refreshPasajero(){
     const btn = document.getElementById('refresh-pasajero');
     btn.classList.add('loading');
@@ -674,7 +721,7 @@ if ("serviceWorker" in navigator) {
   }
   document.getElementById('refresh-pasajero').addEventListener('click', refreshPasajero);
 
-  // ---------------- Perfil de chofer ----------------
+  // ==================== Perfil de chofer ====================
   const cName = document.getElementById('c-name');
   const cPhone = document.getElementById('c-phone');
   const cCode = document.getElementById('c-code');
@@ -687,6 +734,8 @@ if ("serviceWorker" in navigator) {
     if(!name || !code || !nick || !chapa){ toast('Completa nombre, código, nickname y chapa'); return; }
     choferPerfil = { name, phone, code, nick, modelo, chapa };
     await savePerfilChofer(choferPerfil);
+    await upsertChofer(choferPerfil, true);
+    choferDisponible = true;
     mostrarChoferApp();
   });
   document.getElementById('btn-cambiar-perfil').addEventListener('click', ()=>{
@@ -699,10 +748,38 @@ if ("serviceWorker" in navigator) {
     cModelo.value = choferPerfil ? choferPerfil.modelo : '';
     cChapa.value = choferPerfil ? choferPerfil.chapa : '';
   });
-  function mostrarChoferApp(){
+  function actualizarUIDisponible(){
+    const lbl = document.getElementById('estado-actual');
+    const btn = document.getElementById('btn-toggle-disponible');
+    if(choferDisponible){
+      lbl.textContent = '🟢 Disponible';
+      btn.textContent = 'Ponerme fuera de servicio';
+    } else {
+      lbl.textContent = '⚪ Fuera de servicio';
+      btn.textContent = 'Ponerme disponible';
+    }
+  }
+  document.getElementById('btn-toggle-disponible').addEventListener('click', async ()=>{
+    if(!choferPerfil) return;
+    choferDisponible = !choferDisponible;
+    actualizarUIDisponible();
+    const ok = await upsertChofer(choferPerfil, choferDisponible);
+    if(!ok){ toast('No se pudo actualizar tu estado'); }
+  });
+  document.getElementById('btn-activar-push').addEventListener('click', ()=>{
+    if(!choferPerfil){ toast('Primero completa tu perfil de chofer'); return; }
+    subscribeToPush('chofer', choferPerfil.code);
+  });
+  document.getElementById('btn-activar-push-admin').addEventListener('click', ()=>{
+    subscribeToPush('admin', null);
+  });
+
+  async function mostrarChoferApp(){
     document.getElementById('chofer-setup').style.display='none';
     document.getElementById('chofer-app').style.display='';
     document.getElementById('chofer-actual').textContent = `${choferPerfil.nick || choferPerfil.name} · ${choferPerfil.code}`;
+    choferDisponible = await loadEstadoChofer(choferPerfil.code);
+    actualizarUIDisponible();
     refreshChofer();
   }
 
@@ -719,7 +796,7 @@ if ("serviceWorker" in navigator) {
 
     renderMiCuota(list);
 
-    const disponibles = list.filter(p=>p.status==='pendiente');
+    const disponibles = list.filter(p=>p.status==='pendiente' && (!p.dirigidoA || p.dirigidoA===choferPerfil.code));
     const box = document.getElementById('lista-disponibles');
     if(disponibles.length===0){ box.innerHTML = '<div class="empty">No hay pedidos por ahora.</div>'; }
     else{
@@ -728,7 +805,7 @@ if ("serviceWorker" in navigator) {
         const div = document.createElement('div');
         div.className = 'pedido';
         div.innerHTML = `
-          <div class="top"><div class="route">${p.pickup}<span class="arrow">→</span>${p.drop}</div><span class="badge pendiente">pendiente</span></div>
+          <div class="top"><div class="route">${p.pickup}<span class="arrow">→</span>${p.drop}</div><span class="badge pendiente">${p.dirigidoA ? 'para ti' : 'pendiente'}</span></div>
           ${p.nota ? `<div class="nota">"${p.nota}"</div>` : ''}
           <div class="precio-tag">${precioTexto(p)}</div>
           <div class="meta">${p.pasajero} · ${cuandoTexto(p)}</div>
@@ -761,7 +838,7 @@ if ("serviceWorker" in navigator) {
   }
   document.getElementById('refresh-chofer').addEventListener('click', refreshChofer);
 
-  // ---------------- Modal aceptar ----------------
+  // ==================== Modal aceptar ====================
   const modal = document.getElementById('modal-aceptar');
   function abrirModalAceptar(id){
     pedidoAAceptar = id;
@@ -771,50 +848,115 @@ if ("serviceWorker" in navigator) {
   document.getElementById('btn-cancelar-aceptar').addEventListener('click', ()=>modal.classList.remove('open'));
   document.getElementById('btn-confirmar-aceptar').addEventListener('click', async ()=>{
     const list = await loadBoard();
-    const idx = list.findIndex(p=>p.id===pedidoAAceptar);
-    if(idx===-1 || list[idx].status !== 'pendiente'){
+    const actual = list.find(p=>p.id===pedidoAAceptar);
+    if(!actual || actual.status !== 'pendiente'){
       modal.classList.remove('open'); toast('Ese pedido ya no está disponible'); refreshChofer(); return;
     }
-    list[idx].status = 'aceptado';
-    list[idx].driver = choferPerfil.name;
-    list[idx].driverPhone = choferPerfil.phone;
-    list[idx].driverCode = choferPerfil.code;
-    list[idx].driverNick = choferPerfil.nick;
-    list[idx].driverModelo = choferPerfil.modelo;
-    list[idx].driverChapa = choferPerfil.chapa;
-    list[idx].driverSession = sessionId;
-    const ok = await saveBoard(list);
+    const ok = await updatePedido(pedidoAAceptar, {
+      status: 'aceptado',
+      driver: choferPerfil.name,
+      driverPhone: choferPerfil.phone,
+      driverCode: choferPerfil.code,
+      driverNick: choferPerfil.nick,
+      driverModelo: choferPerfil.modelo,
+      driverChapa: choferPerfil.chapa,
+      driverSession: sessionId,
+    });
     modal.classList.remove('open');
     if(ok){ toast('Pedido aceptado'); refreshChofer(); }
   });
 
   async function marcarCompletado(id){
-    const list = await loadBoard();
-    const idx = list.findIndex(p=>p.id===id);
-    if(idx===-1) return;
-    list[idx].status = 'completado';
-    list[idx].completedAt = Date.now();
-    const ok = await saveBoard(list);
+    const ok = await updatePedido(id, { status:'completado', completedAt: Date.now() });
     if(ok){ toast('Viaje completado'); refreshChofer(); }
   }
 
-  // ---------------- Reportar problema ----------------
+  // ==================== Reportar problema (post-viaje) ====================
   const modalR = document.getElementById('modal-reportar');
   function abrirModalReportar(id){ pedidoAReportar = id; document.getElementById('r-detalle').value=''; modalR.classList.add('open'); }
   document.getElementById('btn-cancelar-reporte').addEventListener('click', ()=>modalR.classList.remove('open'));
   document.getElementById('btn-confirmar-reporte').addEventListener('click', async ()=>{
-    const list = await loadBoard();
-    const idx = list.findIndex(p=>p.id===pedidoAReportar);
-    if(idx===-1){ modalR.classList.remove('open'); return; }
-    list[idx].reportado = true;
-    list[idx].reporteDetalle = document.getElementById('r-detalle').value.trim();
-    await saveBoard(list);
+    const ok = await updatePedido(pedidoAReportar, {
+      reportado: true, reporteDetalle: document.getElementById('r-detalle').value.trim()
+    });
     modalR.classList.remove('open');
-    toast('Reporte enviado, gracias');
-    refreshPasajero();
+    if(ok){ toast('Reporte enviado, gracias'); refreshPasajero(); }
   });
 
-  // ---------------- Panel (cuotas) ----------------
+  // ==================== Alertas de seguridad (una fila por alerta) ====================
+  async function loadAlertas(){
+    try{
+      const { data, error } = await supabase.from('alertas').select('id,data,resuelta').order('created_at', {ascending:false}).limit(100);
+      if(error) return [];
+      return data.map(r => Object.assign({}, r.data, { id:r.id, resuelta:r.resuelta }));
+    }catch(e){ return []; }
+  }
+  async function dispararAlerta(tipo, pedido){
+    const ok = confirm('¿Confirmas que hay una emergencia? Esto va a avisar de inmediato.');
+    if(!ok) return;
+    const alerta = {
+      id: 'a'+Date.now()+Math.random().toString(36).slice(2,6),
+      tipo,
+      ts: Date.now(),
+      resuelta: false,
+    };
+    let mensaje = '🚨 EMERGENCIA TriciExpress. ';
+    if(tipo==='chofer' && choferPerfil){
+      alerta.nombre = choferPerfil.nick || choferPerfil.name;
+      alerta.code = choferPerfil.code;
+      alerta.chapa = choferPerfil.chapa;
+      alerta.telefono = choferPerfil.phone;
+      mensaje += `Chofer ${alerta.nombre} (${alerta.code}), chapa ${alerta.chapa||'—'}. `;
+    }
+    if(pedido){
+      alerta.pedidoId = pedido.id;
+      alerta.pickup = pedido.pickup;
+      alerta.drop = pedido.drop;
+      mensaje += `Viaje: ${pedido.pickup} → ${pedido.drop}. `;
+      if(tipo==='pasajero'){
+        alerta.nombre = pedido.pasajero;
+        alerta.telefono = pedido.pasajeroPhone;
+        mensaje += `Pasajero ${pedido.pasajero} reporta peligro con chofer ${pedido.driver} (${pedido.driverCode}), chapa ${pedido.driverChapa||'—'}. `;
+      }
+    }
+    mensaje += `Hora: ${formatFecha(Date.now())}.`;
+    try{
+      const { error } = await supabase.from('alertas').insert({ id: alerta.id, data: alerta, resuelta: false });
+      if(error){ toast('No se pudo enviar la alerta. Revisa tu conexión.'); return; }
+    }catch(e){ toast('No se pudo enviar la alerta. Revisa tu conexión.'); return; }
+    toast('Alerta enviada');
+    if(CONFIG.emergencyPhone){
+      window.open(waLink(CONFIG.emergencyPhone, mensaje), '_blank');
+    } else {
+      toast('No hay número de emergencia configurado — avisa al admin directamente');
+    }
+  }
+  async function resolverAlerta(id){
+    try{
+      await supabase.from('alertas').update({ resuelta:true }).eq('id', id);
+      toast('Alerta marcada como resuelta');
+      refreshPanel();
+    }catch(e){ toast('No se pudo actualizar la alerta'); }
+  }
+  async function renderAlertasBanner(){
+    const alertas = (await loadAlertas()).filter(a=>!a.resuelta);
+    const box = document.getElementById('alertas-banner');
+    if(!box) return;
+    if(alertas.length===0){ box.innerHTML=''; return; }
+    box.innerHTML = alertas.map(a=>`
+      <div class="card" style="border-color:#E0233C; background:rgba(224,35,60,.12); margin-bottom:10px;">
+        <p class="eyebrow" style="color:#E0233C;">🚨 Alerta activa · ${a.tipo==='chofer'?'chofer':'pasajero'}</p>
+        <div class="meta" style="color:#fff;">${a.nombre||'—'} ${a.code?`(${a.code})`:''}</div>
+        ${a.pickup ? `<div class="meta">Viaje: ${a.pickup} → ${a.drop}</div>` : ''}
+        <div class="meta">${formatFecha(a.ts)}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-id="${a.id}">Marcar resuelta</button>
+      </div>`).join('');
+    box.querySelectorAll('button[data-id]').forEach(b=>{
+      b.addEventListener('click', ()=>resolverAlerta(b.dataset.id));
+    });
+  }
+
+  // ==================== Panel de cuotas (dentro de Admin) ====================
   function tierDe(count){
     for(const t of CONFIG.tiers) if(count >= t.min) return t;
     return CONFIG.tiers[CONFIG.tiers.length-1];
@@ -848,9 +990,9 @@ if ("serviceWorker" in navigator) {
   async function refreshPanel(){
     renderAlertasBanner();
     const btn = document.getElementById('refresh-panel');
-    btn.classList.add('loading');
+    if(btn) btn.classList.add('loading');
     const list = await loadBoard();
-    btn.classList.remove('loading');
+    if(btn) btn.classList.remove('loading');
 
     const porChofer = {};
     list.filter(p=>p.driverCode).forEach(p=>{ if(!porChofer[p.driverCode]) porChofer[p.driverCode] = {nombre:p.driver}; });
@@ -890,7 +1032,7 @@ if ("serviceWorker" in navigator) {
   }
   document.getElementById('refresh-panel').addEventListener('click', refreshPanel);
 
-  // ---------------- Admin ----------------
+  // ==================== Admin ====================
   let adminOk = false;
   document.getElementById('btn-admin-entrar').addEventListener('click', ()=>{
     const pass = document.getElementById('admin-pass').value;
@@ -910,6 +1052,7 @@ if ("serviceWorker" in navigator) {
     document.getElementById('a-tier2').value = (CONFIG.tiers.find(t=>t.descuento===0.2)||{}).min ?? 20;
     document.getElementById('a-tier3').value = (CONFIG.tiers.find(t=>t.descuento===0.4)||{}).min ?? 40;
     document.getElementById('a-emergencia').value = CONFIG.emergencyPhone;
+    refreshPanel();
   });
   document.getElementById('btn-admin-salir').addEventListener('click', ()=>{
     adminOk = false;
@@ -936,7 +1079,7 @@ if ("serviceWorker" in navigator) {
     if(ok) toast('Cambios guardados');
   });
 
-  // ---------------- SOS chofer ----------------
+  // ==================== SOS chofer ====================
   document.getElementById('btn-sos').addEventListener('click', async ()=>{
     if(!choferPerfil){ toast('Primero completa tu perfil de chofer'); return; }
     const list = await loadBoard();
@@ -944,17 +1087,21 @@ if ("serviceWorker" in navigator) {
     dispararAlerta('chofer', activo);
   });
 
-  // ---------------- Auto refresh ----------------
+  // ==================== Auto refresh ====================
   setInterval(()=>{
-    if(views.pasajero.style.display!=='none') refreshPasajero();
+    if(views.pasajero.style.display!=='none'){ refreshPasajero(); refreshChoferesDisponibles(); }
     else if(views.chofer.style.display!=='none') refreshChofer();
-    else if(views.panel.style.display!=='none') refreshPanel();
+    else if(views.admin.style.display!=='none' && adminOk) refreshPanel();
   }, 8000);
 
   loadConfig().then(()=>{ actualizarPrecioPreview(); });
   refreshPasajero();
+  refreshChoferesDisponibles();
   loadPerfilChofer().then(p=>{ if(p){ choferPerfil = p; } });
 })();
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 // ===== INSTALACIÓN TRICIEXPRESS =====
 let deferredPrompt = null;
 
